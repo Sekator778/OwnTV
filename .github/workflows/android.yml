@@ -49,6 +49,25 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Fork PRs never see repository secrets (GitHub's rule for pull_request runs), so GPR_TOKEN is
+      # empty there and the tv.own.owntv:core / :player-core lookup on GitHub Packages would 401.
+      # settings.gradle.kts already has the escape hatch: owntv.corePath, a composite-build include
+      # meant for local dev, substitutes core's source for the published artifact. Reuse it here by
+      # cloning the exact core tag this app is pinned to and pointing that property at the clone, so
+      # a fork PR builds and tests against source instead of failing to resolve a private package.
+      - name: Build core from source (fork PRs have no GPR_TOKEN)
+        run: |
+          if [ -n "$GPR_TOKEN" ]; then
+            echo "GPR_TOKEN present: using published core artifacts"
+          else
+            CORE_VERSION=$(sed -n 's/^owntvCore = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+            CORE_PATH="$RUNNER_TEMP/OwnTV_Core"
+            echo "no GPR_TOKEN (fork PR): building core from source at core-$CORE_VERSION"
+            git clone --depth 1 --branch "core-$CORE_VERSION" \
+              https://github.com/ahXN00/OwnTV_Core.git "$CORE_PATH"
+            echo "ORG_GRADLE_PROJECT_owntv.corePath=$CORE_PATH" >> "$GITHUB_ENV"
+          fi
+
       # One variant, not `test`/`lint` across every flavor: standard+debug is the variant the JVM
       # tests are written against, and the ABI flavors differ only in the packaged native libs.
       - name: Unit tests
