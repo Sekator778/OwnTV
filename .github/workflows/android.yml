@@ -55,6 +55,9 @@ jobs:
       # meant for local dev, substitutes core's source for the published artifact. Reuse it here by
       # cloning the exact core tag this app is pinned to and pointing that property at the clone, so
       # a fork PR builds and tests against source instead of failing to resolve a private package.
+      # The property name has a literal dot, and Gradle did not pick it up from an
+      # ORG_GRADLE_PROJECT_owntv.corePath env var in testing — so write it to gradle.properties
+      # instead, the same file settings.gradle.kts already tells local developers to use.
       - name: Build core from source (fork PRs have no GPR_TOKEN)
         run: |
           if [ -n "$GPR_TOKEN" ]; then
@@ -65,7 +68,8 @@ jobs:
             echo "no GPR_TOKEN (fork PR): building core from source at core-$CORE_VERSION"
             git clone --depth 1 --branch "core-$CORE_VERSION" \
               https://github.com/ahXN00/OwnTV_Core.git "$CORE_PATH"
-            echo "ORG_GRADLE_PROJECT_owntv.corePath=$CORE_PATH" >> "$GITHUB_ENV"
+            mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+            echo "owntv.corePath=$CORE_PATH" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
           fi
 
       # One variant, not `test`/`lint` across every flavor: standard+debug is the variant the JVM
