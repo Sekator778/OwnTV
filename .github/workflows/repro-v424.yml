@@ -1,6 +1,7 @@
 name: Reproducibility check — v4.2.4 on ubuntu-latest
 
-# Manual-only. Rebuilds the exact v4.2.4 tag on a stock GitHub Actions ubuntu-latest
+# Triggers on push to this branch (also dispatchable manually once merged). Rebuilds
+# the exact v4.2.4 tag on a stock GitHub Actions ubuntu-latest
 # runner, unsigned, to test whether the runner environment (core count, memory,
 # worker-pool sizing) explains the classes.dex/classes2.dex/baseline.prof gap found
 # between two independent local builds (macOS/arm64/Oracle-JDK-21 and
@@ -9,6 +10,8 @@ name: Reproducibility check — v4.2.4 on ubuntu-latest
 # own CI-produced release. No signing, no secrets: this only needs the unsigned
 # standard/release APK plus its R8 mapping.txt for a direct diff.
 on:
+  push:
+    branches: ['repro/**']
   workflow_dispatch:
 
 jobs:
